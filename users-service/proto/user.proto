@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package user;
 
-option go_package = "user-service/pb";
+option go_package = "user-service/pb;pb";
 
 message GetProfileRequest {
   string id = 1;
@@ -14,6 +14,27 @@ message GetProfileResponse {
   string created_at = 3;
 }
 
+message UpdateProfileRequest {
+  string id = 1;
+  string email = 2;
+}
+
+message UpdateProfileResponse {
+  string id = 1;
+  string email = 2;
+  string updated_at = 3;
+}
+message DeleteProfileRequest {
+  string id = 1;
+}
+
+message DeleteProfileResponse {
+  bool success = 1;
+  string message = 2;
+}
+
 service UserService {
   rpc GetProfile(GetProfileRequest) returns (GetProfileResponse);
+  rpc UpdateProfile(UpdateProfileRequest) returns (UpdateProfileResponse);
+  rpc DeleteProfile(DeleteProfileRequest) returns (DeleteProfileResponse);
 }
