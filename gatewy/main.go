@@ -1,6 +1,8 @@
 package main
 
 import (
+	"GridWhiz/handlers"
+	"GridWhiz/proto/auth-service/pb"
 	"context"
 	"log"
 	"net/http"
@@ -9,9 +11,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"google.golang.org/grpc"
 )
 
 var mongoClient *mongo.Client
+var authClient pb.AuthServiceClient
 
 func connectMongoDB() error {
 	// MongoDB connection string สำหรับ local MongoDB ที่ port 27019
@@ -138,6 +142,19 @@ func main() {
 
 	// ปิดการเชื่อมต่อเมื่อแอพปิด
 	defer disconnectMongoDB()
+
+	conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure())
+	if err != nil {
+		log.Fatalf("fail to connect grpc: %v", err)
+	}
+	defer conn.Close()
+
+	authClient := pb.NewAuthServiceClient(conn)
+	handlers.InitAuthClient(authClient)
+
+	router.POST("/register", handlers.RegisterHandler)
+	router.POST("/login", handlers.LoginHandler)
+	router.POST("/logout", handlers.LogoutHandler)
 
 	// เริ่มต้น server
 	router.Run(PORT)
