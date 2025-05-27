@@ -4,7 +4,7 @@ import (
 	"auth-service/config"
 	"auth-service/db"
 	"auth-service/handler"
-	"auth-service/pb/auth-service/pb"
+	"auth-service/pb"
 	"log"
 	"net"
 

@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package user;
+
+option go_package = "user-service/pb";
+
+message GetProfileRequest {
+  string id = 1;
+}
+
+message GetProfileResponse {
+  string id = 1;
+  string email = 2;
+  string created_at = 3;
+}
+
+service UserService {
+  rpc GetProfile(GetProfileRequest) returns (GetProfileResponse);
+}

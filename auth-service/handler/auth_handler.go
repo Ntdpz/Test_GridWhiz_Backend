@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"auth-service/pb/auth-service/pb"
+	"auth-service/pb"
 	"auth-service/service"
 	"context"
 	"log"
