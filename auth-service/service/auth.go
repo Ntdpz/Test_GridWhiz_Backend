@@ -13,13 +13,19 @@ import (
 )
 
 // RegisterUser creates a new user
-func RegisterUser(email, password string) (*models.User, error) {
+func RegisterUser(username, email, password string) (*models.User, error) {
 	ctx := context.Background()
 	collection := db.GetUsersCollection()
 
-	// Check if user already exists
+	// Check if username already exists
 	var existingUser models.User
-	err := collection.FindOne(ctx, bson.M{"email": email}).Decode(&existingUser)
+	err := collection.FindOne(ctx, bson.M{"username": username}).Decode(&existingUser)
+	if err == nil {
+		return nil, fmt.Errorf("user with username %s already exists", username)
+	}
+
+	// Check if email already exists
+	err = collection.FindOne(ctx, bson.M{"email": email}).Decode(&existingUser)
 	if err == nil {
 		return nil, fmt.Errorf("user with email %s already exists", email)
 	}
@@ -32,6 +38,7 @@ func RegisterUser(email, password string) (*models.User, error) {
 
 	// Create new user
 	user := models.User{
+		Username:  username,
 		Email:     email,
 		Password:  hashedPassword,
 		CreatedAt: time.Now(),

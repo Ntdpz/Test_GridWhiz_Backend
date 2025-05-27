@@ -22,15 +22,15 @@ func (h *AuthHandler) Register(ctx context.Context, req *pb.RegisterRequest) (*p
 	log.Printf("Register request: %s", req.Email)
 
 	// Validate input
-	if req.Email == "" || req.Password == "" {
+	if req.Username == "" || req.Email == "" || req.Password == "" {
 		return &pb.RegisterResponse{
 			Success: false,
-			Message: "Email and password are required",
+			Message: "Username, email and password are required",
 		}, nil
 	}
 
 	// Register user
-	user, err := service.RegisterUser(req.Email, req.Password)
+	user, err := service.RegisterUser(req.Username, req.Email, req.Password)
 	if err != nil {
 		log.Printf("Register error: %v", err)
 		return &pb.RegisterResponse{

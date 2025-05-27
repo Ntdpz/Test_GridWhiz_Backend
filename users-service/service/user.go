@@ -9,6 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type UserServiceServer struct {
@@ -107,5 +108,60 @@ func (s *UserServiceServer) DeleteProfile(ctx context.Context, req *pb.DeletePro
 	return &pb.DeleteProfileResponse{
 		Success: true,
 		Message: "User deleted successfully (soft delete)",
+	}, nil
+}
+func (s *UserServiceServer) ListUsers(ctx context.Context, req *pb.ListUsersRequest) (*pb.ListUsersResponse, error) {
+	filter := bson.M{"deleted_at": bson.M{"$exists": false}}
+
+	// Apply filters
+	if req.Email != "" {
+		filter["email"] = bson.M{"$regex": req.Email, "$options": "i"} // case-insensitive match
+	}
+	if req.Username != "" {
+		filter["username"] = bson.M{"$regex": req.Username, "$options": "i"}
+	}
+
+	// Pagination
+	page := req.GetPage()
+	limit := req.GetLimit()
+	if page <= 0 {
+		page = 1
+	}
+	if limit <= 0 {
+		limit = 10
+	}
+	skip := int64((page - 1) * limit)
+
+	// Query
+	cursor, err := s.UserCollection.Find(ctx, filter, &options.FindOptions{
+		Skip:  &skip,
+		Limit: &[]int64{int64(limit)}[0],
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var users []*pb.UserInfo
+	for cursor.Next(ctx) {
+		var user models.User
+		if err := cursor.Decode(&user); err != nil {
+			continue
+		}
+
+		users = append(users, &pb.UserInfo{
+			Id:        user.ID.Hex(),
+			Username:  user.Username,
+			Email:     user.Email,
+			CreatedAt: user.CreatedAt.Format(time.RFC3339),
+		})
+	}
+
+	// Total count
+	count, _ := s.UserCollection.CountDocuments(ctx, filter)
+
+	return &pb.ListUsersResponse{
+		Users: users,
+		Total: int32(count),
 	}, nil
 }
