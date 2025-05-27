@@ -31,19 +31,3 @@
 - Docker & Docker Compose
 
 ---
-
-## 🚀 API Documentation
-
-### 🔐 Authentication APIs
-
-#### `POST /register` - ลงทะเบียนผู้ใช้ใหม่
-```json
-Request:
-{
-  "email": "test@example.com",
-  "password": "securepassword"
-}
-Response:
-{
-  "message": "User registered successfully"
-}
