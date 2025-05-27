@@ -3,6 +3,7 @@ package main
 import (
 	"GridWhiz/handlers"
 	"GridWhiz/proto/auth-service/pb"
+	resetpb "GridWhiz/proto/reset-password-service/pb" // import reset-password pb
 	"context"
 	"log"
 	"net/http"
@@ -16,7 +17,7 @@ import (
 
 var mongoClient *mongo.Client
 var authClient pb.AuthServiceClient
-
+var resetPasswordClient resetpb.ResetPasswordServiceClient // ตัวแปร client สำหรับ reset-password
 func connectMongoDB() error {
 	// MongoDB connection string สำหรับ local MongoDB ที่ port 27019
 	clientOptions := options.Client().ApplyURI("mongodb://localhost:27019")
@@ -53,7 +54,6 @@ func disconnectMongoDB() {
 
 func main() {
 	PORT := ":8081"
-
 	// สร้าง Gin router
 	router := gin.Default()
 
@@ -142,20 +142,33 @@ func main() {
 
 	// ปิดการเชื่อมต่อเมื่อแอพปิด
 	defer disconnectMongoDB()
-
+	// เชื่อมต่อ gRPC ไปยัง AuthService
 	conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure())
 	if err != nil {
-		log.Fatalf("fail to connect grpc: %v", err)
+		log.Fatalf("fail to connect grpc AuthService: %v", err)
 	}
 	defer conn.Close()
-
-	authClient := pb.NewAuthServiceClient(conn)
+	authClient = pb.NewAuthServiceClient(conn)
 	handlers.InitAuthClient(authClient)
+
+	// เชื่อมต่อ gRPC ไปยัง ResetPasswordService
+	resetConn, err := grpc.Dial("localhost:50053", grpc.WithInsecure())
+	if err != nil {
+		log.Fatalf("fail to connect grpc ResetPasswordService: %v", err)
+	}
+	defer resetConn.Close()
+	resetPasswordClient = resetpb.NewResetPasswordServiceClient(resetConn)
+	handlers.InitResetPasswordClient(resetPasswordClient) // ฟังก์ชันที่ต้องสร้างใน handlers
 
 	router.POST("/register", handlers.RegisterHandler)
 	router.POST("/login", handlers.LoginHandler)
 	router.POST("/logout", handlers.LogoutHandler)
 
-	// เริ่มต้น server
+	// เพิ่ม route สำหรับ Reset Password
+	router.POST("/request-reset", handlers.RequestResetHandler)
+	router.POST("/verify-token", handlers.VerifyResetTokenHandler)
+	router.POST("/reset-password", handlers.ResetPasswordHandler)
+
+	// เริ่ม server
 	router.Run(PORT)
 }
