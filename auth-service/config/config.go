@@ -16,7 +16,7 @@ func LoadConfig() *Config {
 	config := &Config{
 		MongoURI:  getEnv("MONGO_URI", "mongodb://localhost:27019"),
 		Port:      getEnv("PORT", ":50051"),
-		JWTSecret: getEnv("JWT_SECRET", "your-secret-key"),
+		JWTSecret: getEnv("JWT_SECRET", "abc"),
 	}
 
 	return config
