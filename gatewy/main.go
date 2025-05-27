@@ -3,7 +3,9 @@ package main
 import (
 	"GridWhiz/handlers"
 	"GridWhiz/proto/auth-service/pb"
-	resetpb "GridWhiz/proto/reset-password-service/pb" // import reset-password pb
+	authpb "GridWhiz/proto/auth-service/pb"
+	resetpb "GridWhiz/proto/reset-password-service/pb"
+	userpb "GridWhiz/proto/user-service/pb"
 	"context"
 	"log"
 	"net/http"
@@ -148,7 +150,7 @@ func main() {
 		log.Fatalf("fail to connect grpc AuthService: %v", err)
 	}
 	defer conn.Close()
-	authClient = pb.NewAuthServiceClient(conn)
+	authClient = authpb.NewAuthServiceClient(conn)
 	handlers.InitAuthClient(authClient)
 
 	// เชื่อมต่อ gRPC ไปยัง ResetPasswordService
@@ -160,6 +162,16 @@ func main() {
 	resetPasswordClient = resetpb.NewResetPasswordServiceClient(resetConn)
 	handlers.InitResetPasswordClient(resetPasswordClient) // ฟังก์ชันที่ต้องสร้างใน handlers
 
+	// เพิ่มก่อน router.Run()
+	userConn, err := grpc.Dial("localhost:50052", grpc.WithInsecure())
+	if err != nil {
+		log.Fatalf("fail to connect to user-service: %v", err)
+	}
+	defer userConn.Close()
+
+	userServiceClient := userpb.NewUserServiceClient(userConn)
+	handlers.InitUserClient(userServiceClient)
+
 	router.POST("/register", handlers.RegisterHandler)
 	router.POST("/login", handlers.LoginHandler)
 	router.POST("/logout", handlers.LogoutHandler)
@@ -169,6 +181,10 @@ func main() {
 	router.POST("/verify-token", handlers.VerifyResetTokenHandler)
 	router.POST("/reset-password", handlers.ResetPasswordHandler)
 
+	router.GET("/user/:id", handlers.GetProfileHandler)
+	router.PUT("/user", handlers.UpdateProfileHandler)
+	router.DELETE("/user/:id", handlers.DeleteProfileHandler)
+	router.POST("/users", handlers.ListUsersHandler)
 	// เริ่ม server
 	router.Run(PORT)
 }
